@@ -21,7 +21,7 @@ jobs:
       - run: npm run build
 
   ios:
-    name: iOS build (simulator, unsigned)
+    name: iOS — build and run on the simulator
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
@@ -30,14 +30,71 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Build web assets and sync into the Xcode project
+
+      - name: Start MongoDB and the API (demo mode, seeded)
+        run: |
+          npm run db > db.log 2>&1 &
+          for i in $(seq 1 120); do grep -q "MongoDB running" db.log && break; sleep 1; done
+          npm run seed
+          (cd server && npx tsx src/index.ts > ../api.log 2>&1 &)
+          for i in $(seq 1 60); do curl -sf localhost:3000/api/health && break; sleep 1; done
+
+      - name: Build the web app into the Xcode project
         run: npm run ios:sync -w client
         env:
-          VITE_API_URL: https://api.example.invalid
-      - name: Compile the app
+          VITE_API_URL: http://localhost:3000
+          # Test-only: the app logs into the demo account by itself, since nobody can tap.
+          VITE_E2E_AUTO_DEMO: 'true'
+
+      - name: Compile for the simulator
         working-directory: client/ios/App
         run: |
+          set -o pipefail
           xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build | tail -n 40
-          test "${PIPESTATUS[0]}" -eq 0
+            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -n 20
+
+      - name: Launch on an iPhone simulator and check it works
+        run: |
+          sessions() { (cd server && node --input-type=module -e "
+            import mongoose from 'mongoose';
+            await mongoose.connect('mongodb://127.0.0.1:27017/spotter');
+            console.log(await mongoose.connection.db.collection('sessions').countDocuments());
+            await mongoose.disconnect();"); }
+          UDID=$(xcrun simctl list devices available -j | node -e '
+            const d = JSON.parse(require("fs").readFileSync(0, "utf8")).devices;
+            const runtime = Object.keys(d).filter((r) => r.includes("iOS")).sort().pop();
+            console.log(d[runtime].find((x) => x.name.startsWith("iPhone")).udid);')
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" client/ios/App/build/Build/Products/Debug-iphonesimulator/App.app
+          mkdir -p ios-test
+
+          # 1. First launch: the app calls the API from capacitor://localhost, logs in, shows the deck.
+          xcrun simctl launch "$UDID" eu.spotter.app
+          sleep 30
+          xcrun simctl io "$UDID" screenshot ios-test/1-first-launch.png
+          first=$(sessions)
+          echo "sessions after first launch: $first"
+
+          # 2. Quit and relaunch: the token must come back from the Keychain (no new login).
+          xcrun simctl terminate "$UDID" eu.spotter.app
+          xcrun simctl launch "$UDID" eu.spotter.app
+          sleep 20
+          xcrun simctl io "$UDID" screenshot ios-test/2-relaunch.png
+          second=$(sessions)
+          echo "sessions after relaunch: $second"
+
+          xcrun simctl spawn "$UDID" log show --last 3m --predicate 'process == "App"' > ios-test/app.log || true
+          test "$first" -eq 1 || { echo "::error::The app did not log in (sessions: $first)"; exit 1; }
+          test "$second" -eq 1 || { echo "::error::Session was not restored from the Keychain (sessions: $second)"; exit 1; }
+
+      - name: Keep screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator
+          path: |
+            ios-test/
+            api.log
+            db.log

@@ -8,7 +8,8 @@ const dbPath = resolve('data/db');
 mkdirSync(dbPath, { recursive: true });
 
 const mongod = await MongoMemoryServer.create({
-  instance: { port: 27017, ip: '127.0.0.1', dbPath, storageEngine: 'wiredTiger' },
+  // Generous timeout: after an unclean stop MongoDB first recovers its data files.
+  instance: { port: 27017, ip: '127.0.0.1', dbPath, storageEngine: 'wiredTiger', launchTimeout: 60_000 },
 });
 console.log(`MongoDB running at ${mongod.getUri()} (data in ${dbPath}). Ctrl+C to stop.`);
 

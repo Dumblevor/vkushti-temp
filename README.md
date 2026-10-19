@@ -124,4 +124,9 @@ npm test          # 30 tests: matching rules, plus API tests against a real in-m
 npm run typecheck
 ```
 
-`.github/workflows/ci.yml` runs on every push. It runs typecheck, tests and build on Linux, and **compiles the iOS app on a macOS runner** (simulator build, unsigned), so iOS build breakage shows up without a Mac.
+`.github/workflows/ci.yml` runs on every push. It runs typecheck, tests and build on Linux. On a macOS runner it **builds the iOS app and runs it on an iPhone simulator** against a real API and database:
+- The app logs in from inside iOS.
+- After a quit and relaunch, the session comes back from the Keychain.
+- Screenshots and logs are attached to every run as the `ios-simulator` artifact.
+
+So iOS breakage shows up without owning a Mac.

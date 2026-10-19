@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { api } from '../api';
 import { Logo } from '../components/Logo';
@@ -25,6 +25,12 @@ export function Landing() {
       setBusy(false);
     }
   };
+
+  // CI smoke test on the iOS simulator, where nobody can tap: log into the demo account
+  // automatically. Only set in that workflow's build (see .github/workflows/ci.yml).
+  useEffect(() => {
+    if (demoAvailable && import.meta.env.VITE_E2E_AUTO_DEMO === 'true') void tryDemo();
+  }, [demoAvailable]);
 
   const features = [
     { icon: <IconHeart size={22} />, title: t('landing.f1.title'), body: t('landing.f1.body') },
