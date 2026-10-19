@@ -15,11 +15,15 @@ export class ApiError extends Error {
 // Native session token (see native.ts); loaded from the Keychain at startup.
 let token: string | null = null;
 export async function restoreToken() {
-  token = await tokenStore.get().catch(() => null);
+  token = await tokenStore.get().catch((err) => {
+    console.warn('Could not read the session from the Keychain', err);
+    return null;
+  });
 }
 async function setToken(next: string | null) {
   token = next;
-  await (next ? tokenStore.set(next) : tokenStore.clear()).catch(() => {});
+  // If the Keychain fails the session still works until the app is closed; the user logs in again next time.
+  await (next ? tokenStore.set(next) : tokenStore.clear()).catch((err) => console.warn('Could not update the session in the Keychain', err));
 }
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {

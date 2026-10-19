@@ -50,9 +50,11 @@ jobs:
         working-directory: client/ios/App
         run: |
           set -o pipefail
+          # Ad-hoc signed like Xcode's "Sign to Run Locally": an unsigned app is refused Keychain access.
           xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build CODE_SIGNING_ALLOWED=NO build | tail -n 20
+            -derivedDataPath build CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= build | tail -n 20
+          codesign -d --entitlements - build/Build/Products/Debug-iphonesimulator/App.app || true
 
       - name: Launch on an iPhone simulator and check it works
         run: |
@@ -71,7 +73,7 @@ jobs:
           mkdir -p ios-test
 
           # 1. First launch: the app calls the API from capacitor://localhost, logs in, shows the deck.
-          xcrun simctl launch "$UDID" eu.spotter.app
+          xcrun simctl launch --stdout=$PWD/ios-test/console-1.log --stderr=$PWD/ios-test/console-1.log "$UDID" eu.spotter.app
           sleep 30
           xcrun simctl io "$UDID" screenshot ios-test/1-first-launch.png
           first=$(sessions)
@@ -79,13 +81,14 @@ jobs:
 
           # 2. Quit and relaunch: the token must come back from the Keychain (no new login).
           xcrun simctl terminate "$UDID" eu.spotter.app
-          xcrun simctl launch "$UDID" eu.spotter.app
+          xcrun simctl launch --stdout=$PWD/ios-test/console-2.log --stderr=$PWD/ios-test/console-2.log "$UDID" eu.spotter.app
           sleep 20
           xcrun simctl io "$UDID" screenshot ios-test/2-relaunch.png
           second=$(sessions)
           echo "sessions after relaunch: $second"
 
           xcrun simctl spawn "$UDID" log show --last 3m --predicate 'process == "App"' > ios-test/app.log || true
+          grep -hE "Keychain|SecureStorage|error" ios-test/console-*.log | head -20 || true
           test "$first" -eq 1 || { echo "::error::The app did not log in (sessions: $first)"; exit 1; }
           test "$second" -eq 1 || { echo "::error::Session was not restored from the Keychain (sessions: $second)"; exit 1; }
 
