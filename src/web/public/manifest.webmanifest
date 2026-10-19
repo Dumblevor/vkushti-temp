@@ -1,0 +1,10 @@
+{
+  "name": "Spotter",
+  "short_name": "Spotter",
+  "description": "The European dating app for people who train.",
+  "start_url": "/discover",
+  "display": "standalone",
+  "background_color": "#f6f4ef",
+  "theme_color": "#16151a",
+  "icons": [{ "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
