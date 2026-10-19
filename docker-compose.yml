@@ -1,0 +1,12 @@
+# Local MongoDB for development: `docker compose up -d`
+# (or `npm run db`, which needs no Docker). In production use a managed
+# MongoDB in an EU region, e.g. MongoDB Atlas in Frankfurt, Paris or Ireland.
+services:
+  mongo:
+    image: mongo:8
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+volumes:
+  mongo-data:

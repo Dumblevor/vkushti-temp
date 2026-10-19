@@ -1,0 +1,36 @@
+{
+  "name": "@spotter/client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Spotter app — React (Vite) for the web, wrapped with Capacitor for iOS.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:ios": "tsc --noEmit && vite build --mode ios",
+    "typecheck": "tsc --noEmit",
+    "ios": "npm run build:ios && cap sync ios && cap open ios",
+    "ios:sync": "npm run build:ios && cap sync ios"
+  },
+  "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^8.0.1",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.5.3",
+    "@capacitor/keyboard": "^8.0.6",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.4",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@spotter/shared": "*",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router": "^7.18.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "vite": "^8.3.4"
+  }
+}

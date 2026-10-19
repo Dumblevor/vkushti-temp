@@ -104,9 +104,9 @@ Freemium, with a premium tier that never paywalls basic decency (safety features
 
 ## Roadmap after the prototype
 
-1. Native apps: wrap the PWA with Capacitor for the stores, then move to React Native as needed. Add push notifications.
+1. Ship the iOS app (the Capacitor project is in `client/ios`) to TestFlight, then the App Store. Add push notifications (APNs) and an Android build from the same code.
 2. Photo verification (selfie liveness check), moderation queue and admin tools, and DSA statements of reasons and appeals.
-3. Postgres + PostGIS, object storage for photos (EU region), WebSockets for chat, and email verification.
+3. MongoDB Atlas in an EU region, photos in EU object storage behind a CDN (URLs are already signed), WebSockets for chat, and email verification.
 4. Payments (Plus) with EU-compliant subscription flows. Events and ticketing.
 5. Opt-in integrations (Strava, Garmin, Apple Health) to auto-fill sports and schedule, never to show performance data publicly.
 6. More languages; travel mode.
